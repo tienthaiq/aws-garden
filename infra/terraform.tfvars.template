@@ -1,0 +1,16 @@
+region = "ap-southeast-1"
+
+airflow_config = {
+    fernet_key = ""
+    api_secret_key = ""
+    api_auth_secret_key = ""
+}
+
+airflow_db_creds = {
+    db_name = "airflow"
+    username = "airflow"
+    password = ""
+    port = 5432
+}
+
+home_ip = "x.x.x.x/32"
