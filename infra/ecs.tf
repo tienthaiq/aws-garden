@@ -22,8 +22,19 @@ resource "aws_ecs_task_definition" "ecs_task_def_airflow_apiserver" {
     operating_system_family = "LINUX"
     cpu_architecture        = "X86_64"
   }
-
   requires_compatibilities = ["FARGATE"]
+  volume {
+    name                = "dag-vol"
+    configure_at_launch = false
+    efs_volume_configuration {
+      file_system_id     = aws_efs_file_system.airflow_shared_vol.id
+      transit_encryption = "ENABLED"
+      authorization_config {
+        access_point_id = aws_efs_access_point.airflow_shared_vol_ac_dag.id
+        iam             = "ENABLED"
+      }
+    }
+  }
   container_definitions = jsonencode([
     {
       name      = "init-db"
@@ -88,6 +99,13 @@ resource "aws_ecs_task_definition" "ecs_task_def_airflow_apiserver" {
           awslogs-stream-prefix = "apiserver"
         }
       }
+      mountPoints = [
+        {
+          containerPath = "opt/airflow/dags"
+          readOnly      = true
+          sourceVolume  = "dag-vol"
+        }
+      ]
     },
     {
       name  = "scheduler"
@@ -120,6 +138,13 @@ resource "aws_ecs_task_definition" "ecs_task_def_airflow_apiserver" {
           awslogs-stream-prefix = "scheduler"
         }
       }
+      mountPoints = [
+        {
+          containerPath = "opt/airflow/dags"
+          readOnly      = true
+          sourceVolume  = "dag-vol"
+        }
+      ]
     },
     {
       name  = "dag-processor"
@@ -152,6 +177,13 @@ resource "aws_ecs_task_definition" "ecs_task_def_airflow_apiserver" {
           awslogs-stream-prefix = "dag-processor"
         }
       }
+      mountPoints = [
+        {
+          containerPath = "opt/airflow/dags"
+          readOnly      = false
+          sourceVolume  = "dag-vol"
+        }
+      ]
     },
     {
       name  = "triggerer"
@@ -184,6 +216,13 @@ resource "aws_ecs_task_definition" "ecs_task_def_airflow_apiserver" {
           awslogs-stream-prefix = "triggerer"
         }
       }
+      mountPoints = [
+        {
+          containerPath = "opt/airflow/dags"
+          readOnly      = true
+          sourceVolume  = "dag-vol"
+        }
+      ]
     }
   ])
 }
@@ -246,12 +285,25 @@ resource "aws_ecs_task_definition" "ecs_task_def_airflow_worker" {
 
   requires_compatibilities = ["FARGATE"]
   volume {
-    name = "dbt-vol"
+    name                = "dbt-vol"
+    configure_at_launch = false
     efs_volume_configuration {
       file_system_id     = aws_efs_file_system.airflow_shared_vol.id
       transit_encryption = "ENABLED"
       authorization_config {
         access_point_id = aws_efs_access_point.airflow_shared_vol_ac_dbt.id
+        iam             = "ENABLED"
+      }
+    }
+  }
+  volume {
+    name                = "dag-vol"
+    configure_at_launch = false
+    efs_volume_configuration {
+      file_system_id     = aws_efs_file_system.airflow_shared_vol.id
+      transit_encryption = "ENABLED"
+      authorization_config {
+        access_point_id = aws_efs_access_point.airflow_shared_vol_ac_dag.id
         iam             = "ENABLED"
       }
     }
@@ -293,6 +345,11 @@ resource "aws_ecs_task_definition" "ecs_task_def_airflow_worker" {
           containerPath = "/opt/dbt"
           readOnly      = false
           sourceVolume  = "dbt-vol"
+        },
+        {
+          containerPath = "opt/airflow/dags"
+          readOnly      = true
+          sourceVolume  = "dag-vol"
         }
       ]
     }

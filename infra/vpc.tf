@@ -1,5 +1,5 @@
 resource "aws_vpc" "demo_airflow_vpc" {
-  cidr_block = "10.1.0.0/21"
+  cidr_block           = "10.1.0.0/21"
   enable_dns_hostnames = true
   tags = {
     Name = "demo_airflow_vpc"

@@ -44,7 +44,7 @@ locals {
     },
     {
       name  = "AIRFLOW__CORE__LOAD_EXAMPLES"
-      value = "true"
+      value = "false"
     },
     {
       name  = "AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK"
@@ -61,6 +61,21 @@ locals {
     {
       name  = "AIRFLOW__LOGGING__REMOTE_LOG_CONN_ID"
       value = "airflow_remote_log"
+    },
+    {
+      name = "AIRFLOW__DAG_PROCESSOR__DAG_BUNDLE_CONFIG_LIST"
+      value = jsonencode([
+        {
+          name      = "dag_git_repo"
+          classpath = "airflow.providers.git.bundles.git.GitDagBundle"
+          kwargs = {
+            tracking_ref = "main"
+            subdir       = "airflow/dags"
+            git_conn_id  = "dag_git"
+            repo_url     = "https://github.com/tienthaiq/aws-garden.git"
+          }
+        }
+      ])
     }
   ]
 }
