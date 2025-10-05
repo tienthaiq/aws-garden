@@ -16,7 +16,7 @@ def write_file(file_name: str, payload: str):
     if _path.exists():
         with _path.open("r") as file:
             content = file.read()
-        logger.info("File %s exists. Content: %s", _path.absolute(), content)
+        logger.info("[v2] File %s exists. Content: %s", _path.absolute(), content)
         return
     else:
         with _path.open("w") as file:
@@ -35,3 +35,6 @@ with DAG(
         op_args=["hello.txt", "Hello World"]
     )
     end = EmptyOperator(task_id="end")
+    (
+        start >> write_file >> end
+    )
