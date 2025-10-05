@@ -25,13 +25,13 @@ def write_file(file_name: str, payload: str):
 
 
 with DAG(
-    "write_local_file",
+    dag_id="write_local_file",
     start_date=datetime.datetime(2025, 10, 4)
 ) as dag:
-    start = EmptyOperator("start")
+    start = EmptyOperator(task_id="start")
     write_file = PythonOperator(
-        "write_file",
+        task_id="write_file",
         python_callable=write_file,
         op_args=["hello.txt", "Hello World"]
     )
-    end = EmptyOperator("end")
+    end = EmptyOperator(task_id="end")

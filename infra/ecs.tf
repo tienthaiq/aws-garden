@@ -158,7 +158,15 @@ resource "aws_ecs_task_definition" "ecs_task_def_airflow_apiserver" {
       }
       essential   = false
       command     = ["dag-processor"]
-      environment = local.airflow_common_environment
+      environment = concat(
+        local.airflow_common_environment,
+        [
+          {
+            name  = "AIRFLOW__LOGGING__LOGGING_LEVEL"
+            value = "DEBUG"
+          }
+        ]
+      )
       user        = "${local.airflow_uid}:0"
       dependsOn = [
         {

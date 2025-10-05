@@ -71,11 +71,14 @@ locals {
           kwargs = {
             tracking_ref = "main"
             subdir       = "airflow/dags"
-            git_conn_id  = "dag_git"
-            repo_url     = "https://github.com/tienthaiq/aws-garden.git"
+            git_conn_id  = "dag_github"
           }
         }
       ])
+    },
+    {
+      name = "AIRFLOW__SECRETS__BACKEND"
+      value = "airflow.secrets.metastore.MetastoreBackend"
     }
   ]
 }
