@@ -164,6 +164,11 @@ resource "aws_ecs_task_definition" "ecs_task_def_airflow_apiserver" {
           {
             name  = "AIRFLOW__LOGGING__LOGGING_LEVEL"
             value = "DEBUG"
+          },
+          # https://github.com/apache/airflow/issues/56165#issuecomment-3364403924
+          {
+            name = "AIRFLOW__SECRETS__BACKEND"
+            value = "airflow.secrets.metastore.MetastoreBackend"
           }
         ]
       )

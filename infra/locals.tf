@@ -75,10 +75,6 @@ locals {
           }
         }
       ])
-    },
-    {
-      name = "AIRFLOW__SECRETS__BACKEND"
-      value = "airflow.secrets.metastore.MetastoreBackend"
     }
   ]
 }
