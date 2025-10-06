@@ -55,7 +55,7 @@ locals {
     },
     {
       name  = "AIRFLOW__LOGGING__REMOTE_BASE_LOG_FOLDER"
-      value = "s3://tientq-airflow/logs"
+      value = "s3://${var.airflow_config.log_bucket_name}/logs"
     },
     {
       name  = "AIRFLOW__CELERY__WORKER_CONCURRENCY"

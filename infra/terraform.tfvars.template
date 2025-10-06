@@ -1,10 +1,11 @@
-region = "ap-southeast-1"
+region = ""
 
 airflow_config = {
     fernet_key = ""
     api__secret_key = ""
     api_auth__jwt_key = ""
     image_tag = "latest"
+    log_bucket_name = ""
 }
 
 airflow_db_creds = {

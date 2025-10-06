@@ -7,9 +7,7 @@ terraform {
   }
 
   backend "s3" {
-    bucket = "tientq-terraform"
-    key    = "aws-garden/terraform.tfstate"
-    region = "ap-southeast-1"
+    key = "aws-garden/terraform.tfstate"
   }
 
   required_version = ">= 1.13"
