@@ -24,6 +24,35 @@ resource "aws_iam_role_policy_attachment" "ecs_task_exec_role_airflow_attachment
   policy_arn = data.aws_iam_policy.amazon_ecs_task_exection_role_policy.arn
 }
 
+resource "aws_iam_policy" "ecs_task_exec_role_airflow_read_secret" {
+  name = "ecs_task_exec_role_airflow_read_secret"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = [
+          "secretsmanager:GetSecretValue",
+          "secretsmanager:DescribeSecret",
+          "secretsmanager:ListSecretVersionIds"
+        ]
+        Effect = "Allow"
+        Resource = [
+          aws_secretsmanager_secret.airflow_db_uri.arn,
+          aws_secretsmanager_secret.airflow_fernet_key.arn,
+          aws_secretsmanager_secret.airflow_secret_key.arn,
+          aws_secretsmanager_secret.airflow_jwt_secret.arn,
+          aws_secretsmanager_secret.airflow_celery_result_backend.arn,
+        ]
+      },
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "ecs_task_exec_role_airflow_read_secret_attachment" {
+  role       = aws_iam_role.ecs_task_exec_role_airflow.name
+  policy_arn = aws_iam_policy.ecs_task_exec_role_airflow_read_secret.arn
+}
+
 # Airflow ECS task role
 resource "aws_iam_role" "ecs_task_role_airflow" {
   name = "ecs_task_role_airflow"

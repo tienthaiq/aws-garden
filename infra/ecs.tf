@@ -2,7 +2,7 @@ resource "aws_ecs_cluster" "airflow_ecs_cluster" {
   name = "airflow"
   setting {
     name  = "containerInsights"
-    value = "enhanced"
+    value = "enabled"
   }
 }
 
@@ -11,8 +11,8 @@ resource "aws_ecs_cluster_capacity_providers" "airflow_ecs_cluster_cp" {
   capacity_providers = ["FARGATE"]
 }
 
-resource "aws_ecs_task_definition" "ecs_task_def_airflow_apiserver" {
-  family             = "airflow-apiserver"
+resource "aws_ecs_task_definition" "ecs_task_def_airflow_controlplane" {
+  family             = "airflow-controlplane"
   cpu                = 4096
   memory             = 8192
   execution_role_arn = aws_iam_role.ecs_task_exec_role_airflow.arn
@@ -38,13 +38,14 @@ resource "aws_ecs_task_definition" "ecs_task_def_airflow_apiserver" {
           },
         ]
       )
-      user = "${local.airflow_uid}:0"
+      secrets = local.airflow_secret_environment
+      user    = "${local.airflow_uid}:0"
       logConfiguration = {
         logDriver = "awslogs"
         options = {
           awslogs-group         = aws_cloudwatch_log_group.airflow_ecs.name
           awslogs-region        = var.region
-          awslogs-stream-prefix = "init-db"
+          awslogs-stream-prefix = "controlplane"
         }
       }
     },
@@ -53,7 +54,7 @@ resource "aws_ecs_task_definition" "ecs_task_def_airflow_apiserver" {
       image = local.airflow_image
       portMappings = [
         {
-          name          = "api-server"
+          name          = "apiserver"
           containerPort = 8080
           hostPort      = 8080
         }
@@ -67,6 +68,7 @@ resource "aws_ecs_task_definition" "ecs_task_def_airflow_apiserver" {
       essential   = true
       command     = ["api-server"]
       environment = local.airflow_common_environment
+      secrets     = local.airflow_secret_environment
       user        = "${local.airflow_uid}:0"
       dependsOn = [
         {
@@ -84,7 +86,7 @@ resource "aws_ecs_task_definition" "ecs_task_def_airflow_apiserver" {
         options = {
           awslogs-group         = aws_cloudwatch_log_group.airflow_ecs.name
           awslogs-region        = var.region
-          awslogs-stream-prefix = "apiserver"
+          awslogs-stream-prefix = "controlplane"
         }
       }
     },
@@ -101,6 +103,7 @@ resource "aws_ecs_task_definition" "ecs_task_def_airflow_apiserver" {
       essential   = false
       command     = ["scheduler"]
       environment = local.airflow_common_environment
+      secrets     = local.airflow_secret_environment
       user        = "${local.airflow_uid}:0"
       dependsOn = [
         {
@@ -116,7 +119,7 @@ resource "aws_ecs_task_definition" "ecs_task_def_airflow_apiserver" {
         options = {
           awslogs-group         = aws_cloudwatch_log_group.airflow_ecs.name
           awslogs-region        = var.region
-          awslogs-stream-prefix = "scheduler"
+          awslogs-stream-prefix = "controlplane"
         }
       }
     },
@@ -130,23 +133,20 @@ resource "aws_ecs_task_definition" "ecs_task_def_airflow_apiserver" {
         retries     = 5
         startPeriod = 120
       }
-      essential   = false
-      command     = ["dag-processor"]
+      essential = false
+      command   = ["dag-processor"]
       environment = concat(
         local.airflow_common_environment,
         [
-          {
-            name  = "AIRFLOW__LOGGING__LOGGING_LEVEL"
-            value = "DEBUG"
-          },
           # https://github.com/apache/airflow/issues/56165#issuecomment-3364403924
           {
-            name = "AIRFLOW__SECRETS__BACKEND"
+            name  = "AIRFLOW__SECRETS__BACKEND"
             value = "airflow.secrets.metastore.MetastoreBackend"
           }
         ]
       )
-      user        = "${local.airflow_uid}:0"
+      secrets = local.airflow_secret_environment
+      user    = "${local.airflow_uid}:0"
       dependsOn = [
         {
           containerName = "init-db"
@@ -161,7 +161,7 @@ resource "aws_ecs_task_definition" "ecs_task_def_airflow_apiserver" {
         options = {
           awslogs-group         = aws_cloudwatch_log_group.airflow_ecs.name
           awslogs-region        = var.region
-          awslogs-stream-prefix = "dag-processor"
+          awslogs-stream-prefix = "controlplane"
         }
       }
     },
@@ -178,6 +178,7 @@ resource "aws_ecs_task_definition" "ecs_task_def_airflow_apiserver" {
       essential   = false
       command     = ["triggerer"]
       environment = local.airflow_common_environment
+      secrets     = local.airflow_secret_environment
       user        = "${local.airflow_uid}:0"
       dependsOn = [
         {
@@ -193,16 +194,16 @@ resource "aws_ecs_task_definition" "ecs_task_def_airflow_apiserver" {
         options = {
           awslogs-group         = aws_cloudwatch_log_group.airflow_ecs.name
           awslogs-region        = var.region
-          awslogs-stream-prefix = "triggerer"
+          awslogs-stream-prefix = "controlplane"
         }
       }
     }
   ])
 }
 
-resource "aws_ecs_service" "airflow_apiserver" {
-  name            = "airflow-apiserver"
-  task_definition = aws_ecs_task_definition.ecs_task_def_airflow_apiserver.arn
+resource "aws_ecs_service" "airflow_controlplane" {
+  name            = "airflow-controlplane"
+  task_definition = aws_ecs_task_definition.ecs_task_def_airflow_controlplane.arn
   cluster         = aws_ecs_cluster.airflow_ecs_cluster.arn
   deployment_controller {
     type = "ECS"
@@ -221,7 +222,7 @@ resource "aws_ecs_service" "airflow_apiserver" {
       aws_subnet.demo_airflow_subnet_public_b.id,
     ]
     assign_public_ip = true
-    security_groups  = [aws_security_group.airflow_apiserver_sg.id]
+    security_groups  = [aws_security_group.airflow_controlplane_sg.id]
   }
   platform_version    = "1.4.0"
   scheduling_strategy = "REPLICA"
@@ -233,9 +234,9 @@ resource "aws_ecs_service" "airflow_apiserver" {
   }
   service_connect_configuration {
     enabled   = true
-    namespace = aws_service_discovery_private_dns_namespace.airflow_apiserver_private.arn
+    namespace = aws_service_discovery_private_dns_namespace.airflow_private.arn
     service {
-      port_name = "api-server"
+      port_name = "apiserver"
       client_alias {
         port     = 80
         dns_name = "airflow-apiserver"
@@ -289,7 +290,8 @@ resource "aws_ecs_task_definition" "ecs_task_def_airflow_worker" {
           }
         ]
       )
-      user = "${local.airflow_uid}:0"
+      secrets = local.airflow_secret_environment
+      user    = "${local.airflow_uid}:0"
       linuxParameters = {
         initProcessEnabled = true
       }
@@ -340,6 +342,6 @@ resource "aws_ecs_service" "airflow_worker" {
   scheduling_strategy = "REPLICA"
   service_connect_configuration {
     enabled   = true
-    namespace = aws_service_discovery_private_dns_namespace.airflow_apiserver_private.arn
+    namespace = aws_service_discovery_private_dns_namespace.airflow_private.arn
   }
 }

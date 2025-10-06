@@ -14,9 +14,9 @@ variable "airflow_db_creds" {
 
 variable "airflow_config" {
   type = object({
-    fernet_key          = string
-    api_secret_key      = string
-    api_auth_secret_key = string
+    fernet_key        = string
+    api__secret_key   = string
+    api_auth__jwt_key = string
   })
 }
 

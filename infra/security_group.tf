@@ -15,8 +15,8 @@ resource "aws_security_group" "airflow_alb_sg" {
   }
 }
 
-resource "aws_security_group" "airflow_apiserver_sg" {
-  name   = "airflow_apiserver_sg"
+resource "aws_security_group" "airflow_controlplane_sg" {
+  name   = "airflow_controlplane_sg"
   vpc_id = aws_vpc.demo_airflow_vpc.id
   ingress {
     from_port = 8080
@@ -43,7 +43,7 @@ resource "aws_security_group" "airflow_db_sg" {
     to_port   = 5432
     protocol  = "tcp"
     security_groups = [
-      aws_security_group.airflow_apiserver_sg.id,
+      aws_security_group.airflow_controlplane_sg.id,
       aws_security_group.airflow_worker_sg.id,
     ]
   }
