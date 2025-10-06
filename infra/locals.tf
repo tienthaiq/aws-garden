@@ -1,5 +1,5 @@
 locals {
-  airflow_image = "${aws_ecr_repository.airflow.repository_url}:3.1.0-build-0.0.6"
+  airflow_image = "${aws_ecr_repository.airflow.repository_url}:${var.airflow_config.image_tag}"
   airflow_uid   = 50000
   # TODO: using secret sidecar to create airflow.cfg file from Secret entry instead
   airflow_secret_environment = [

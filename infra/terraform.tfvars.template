@@ -4,6 +4,7 @@ airflow_config = {
     fernet_key = ""
     api__secret_key = ""
     api_auth__jwt_key = ""
+    image_tag = "latest"
 }
 
 airflow_db_creds = {

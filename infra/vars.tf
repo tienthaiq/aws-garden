@@ -17,6 +17,7 @@ variable "airflow_config" {
     fernet_key        = string
     api__secret_key   = string
     api_auth__jwt_key = string
+    image_tag = string
   })
 }
 
