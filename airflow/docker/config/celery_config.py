@@ -2,6 +2,7 @@ import os
 
 from airflow.providers.celery.executors.default_celery import DEFAULT_CELERY_CONFIG
 
+# Customized configurations for Celery workers to work with AWS SQS
 CELERY_CONFIG = {
     **DEFAULT_CELERY_CONFIG,
     "broker_transport_options": {
