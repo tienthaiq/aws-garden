@@ -1,7 +1,6 @@
 locals {
   airflow_image = "${aws_ecr_repository.airflow.repository_url}:${var.airflow_config.image_tag}"
   airflow_uid   = 50000
-  # TODO: using secret sidecar to create airflow.cfg file from Secret entry instead
   airflow_secret_environment = [
     {
       name      = "AIRFLOW__DATABASE__SQL_ALCHEMY_CONN"
@@ -23,6 +22,11 @@ locals {
       name      = "AIRFLOW__CELERY__RESULT_BACKEND"
       valueFrom = aws_secretsmanager_secret.airflow_celery_result_backend.arn
     },
+    # TODO: GitDagBundle somehow does not pick up connection from environment variable
+    # {
+    #   name = "AIRFLOW_CONN_DAG_GITHUB"
+    #   valueFrom = aws_secretsmanager_secret.airflow_git_conn_body.arn
+    # },
   ]
   airflow_common_environment = [
     {
@@ -38,9 +42,14 @@ locals {
       value = "2"
     },
     {
-      name  = "X_AIRFLOW_CELERY_SQS_BROKER_PREDEFINED_QUEUE_URL"
-      value = aws_sqs_queue.airflow_celery_broker.url
+      name = "AIRFLOW__CELERY__BROKER_URL"
+      value = "redis://:@${aws_elasticache_cluster.airflow_redis.cache_nodes[0].address}:${aws_elasticache_cluster.airflow_redis.cache_nodes[0].port}/0"
     },
+    # Uncomment if using AWS SQS broker
+    # {
+    #   name  = "X_AIRFLOW_CELERY_SQS_BROKER_PREDEFINED_QUEUE_URL"
+    #   value = aws_sqs_queue.airflow_celery_broker.url
+    # },
     {
       name  = "AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION"
       value = "true"
@@ -64,6 +73,15 @@ locals {
     {
       name  = "AIRFLOW__LOGGING__REMOTE_LOG_CONN_ID"
       value = "airflow_remote_log"
+    },
+    {
+      name = "AIRFLOW_CONN_AIRFLOW_REMOTE_LOG"
+      value = jsonencode({
+        conn_type = "aws"
+        extra = jsonencode({
+          region = var.region
+        })
+      })
     },
     {
       name = "AIRFLOW__DAG_PROCESSOR__DAG_BUNDLE_CONFIG_LIST"

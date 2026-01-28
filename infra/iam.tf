@@ -42,6 +42,8 @@ resource "aws_iam_policy" "ecs_task_exec_role_airflow_read_secret" {
           aws_secretsmanager_secret.airflow_secret_key.arn,
           aws_secretsmanager_secret.airflow_jwt_secret.arn,
           aws_secretsmanager_secret.airflow_celery_result_backend.arn,
+          aws_secretsmanager_secret.airflow_git_conn_body.arn,
+          aws_secretsmanager_secret.airflow_admin_user.arn,
         ]
       },
     ]
@@ -123,30 +125,31 @@ resource "aws_iam_role_policy_attachment" "ecs_task_role_ecs_exec_attachment" {
   policy_arn = aws_iam_policy.ecs_task_role_ecs_exec.arn
 }
 
-resource "aws_iam_policy" "ecs_task_role_airflow_sqs_rw" {
-  name = "ecs_task_role_airflow_sqs_rw"
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "sqs:ReceiveMessage",
-          "sqs:SendMessage",
-          "sqs:DeleteMessage",
-          "sqs:ChangeMessageVisibility",
-          "sqs:GetQueueAttributes",
-        ]
-        Resource = aws_sqs_queue.airflow_celery_broker.arn
-      }
-    ]
-  })
-}
-
-resource "aws_iam_role_policy_attachment" "ecs_task_role_airflow_sqs_rw_attachment" {
-  role       = aws_iam_role.ecs_task_role_airflow.name
-  policy_arn = aws_iam_policy.ecs_task_role_airflow_sqs_rw.arn
-}
+## Uncomment if using AWS SQS broker
+# resource "aws_iam_policy" "ecs_task_role_airflow_sqs_rw" {
+#   name = "ecs_task_role_airflow_sqs_rw"
+#   policy = jsonencode({
+#     Version = "2012-10-17"
+#     Statement = [
+#       {
+#         Effect = "Allow"
+#         Action = [
+#           "sqs:ReceiveMessage",
+#           "sqs:SendMessage",
+#           "sqs:DeleteMessage",
+#           "sqs:ChangeMessageVisibility",
+#           "sqs:GetQueueAttributes",
+#         ]
+#         Resource = aws_sqs_queue.airflow_celery_broker.arn
+#       }
+#     ]
+#   })
+# }
+#
+# resource "aws_iam_role_policy_attachment" "ecs_task_role_airflow_sqs_rw_attachment" {
+#   role       = aws_iam_role.ecs_task_role_airflow.name
+#   policy_arn = aws_iam_policy.ecs_task_role_airflow_sqs_rw.arn
+# }
 
 resource "aws_iam_policy" "airflow_rw_efs" {
   name = "airflow_rw_efs"
