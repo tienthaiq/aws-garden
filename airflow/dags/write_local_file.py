@@ -24,7 +24,7 @@ def write_file(file_name: str, payload: str):
         logger.info("File %s does not exists. Creating new one.", _path.absolute())
 
 
-def slow_task(sleep_times: int):
+def long_sleep(sleep_times: int):
     import time
     for i in range(sleep_times):
         logger.info("Sleep for 1 second")
@@ -36,13 +36,17 @@ with DAG(
     start_date=datetime.datetime(2025, 10, 4)
 ) as dag:
     start = EmptyOperator(task_id="start")
-    write_file = PythonOperator(
+    write_file_task = PythonOperator(
         task_id="write_file",
         python_callable=write_file,
         op_args=["hello.txt", "Hello World"]
     )
-    slow_task(60)
+    slow_task = PythonOperator(
+        task_id="slow_task",
+        python_callable=long_sleep,
+        op_args=[60]
+    )
     end = EmptyOperator(task_id="end")
     (
-        start >> write_file >> slow_task >> end
+        start >> write_file_task >> slow_task >> end
     )
