@@ -15,4 +15,15 @@ airflow_db_creds = {
     port = 5432
 }
 
+airflow_dag_git = {
+    repo_url = ""
+    token_name = ""
+    token_value = ""
+}
+
+airflow_admin_user = {
+  username = ""
+  password = ""
+}
+
 home_ip = "x.x.x.x/32"
