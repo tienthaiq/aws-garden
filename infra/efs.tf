@@ -14,7 +14,7 @@ resource "aws_efs_mount_target" "airflow_shared_vol_az_b" {
   security_groups = [aws_security_group.efs_airflow_shared_vol.id]
 }
 
-resource "aws_efs_access_point" "airflow_shared_vol_ac_dbt" {
+resource "aws_efs_access_point" "airflow_dbt" {
   file_system_id = aws_efs_file_system.airflow_shared_vol.id
   posix_user {
     uid = local.airflow_uid
@@ -22,6 +22,22 @@ resource "aws_efs_access_point" "airflow_shared_vol_ac_dbt" {
   }
   root_directory {
     path = "/dbt"
+    creation_info {
+      owner_uid   = local.airflow_uid
+      owner_gid   = 0
+      permissions = 775
+    }
+  }
+}
+
+resource "aws_efs_access_point" "airflow_log" {
+  file_system_id = aws_efs_file_system.airflow_shared_vol.id
+  posix_user {
+    uid = local.airflow_uid
+    gid = 0
+  }
+  root_directory {
+    path = "/logs"
     creation_info {
       owner_uid   = local.airflow_uid
       owner_gid   = 0

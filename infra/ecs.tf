@@ -23,6 +23,18 @@ resource "aws_ecs_task_definition" "ecs_task_def_airflow_controlplane" {
     cpu_architecture        = "X86_64"
   }
   requires_compatibilities = ["FARGATE"]
+  volume {
+    name                = "log-vol"
+    configure_at_launch = false
+    efs_volume_configuration {
+      file_system_id     = aws_efs_file_system.airflow_shared_vol.id
+      transit_encryption = "ENABLED"
+      authorization_config {
+        access_point_id = aws_efs_access_point.airflow_log.id
+        iam             = "ENABLED"
+      }
+    }
+  }
   container_definitions = jsonencode([
     {
       name      = "init-db"
@@ -105,6 +117,13 @@ resource "aws_ecs_task_definition" "ecs_task_def_airflow_controlplane" {
           awslogs-stream-prefix = "controlplane"
         }
       }
+      mountPoints = [
+        {
+          containerPath = "/opt/airflow/logs"
+          readOnly      = false
+          sourceVolume  = "log-vol"
+        }
+      ]
     },
     {
       name  = "scheduler"
@@ -138,6 +157,13 @@ resource "aws_ecs_task_definition" "ecs_task_def_airflow_controlplane" {
           awslogs-stream-prefix = "controlplane"
         }
       }
+      mountPoints = [
+        {
+          containerPath = "/opt/airflow/logs"
+          readOnly      = false
+          sourceVolume  = "log-vol"
+        }
+      ]
     },
     {
       name  = "dag-processor"
@@ -180,6 +206,13 @@ resource "aws_ecs_task_definition" "ecs_task_def_airflow_controlplane" {
           awslogs-stream-prefix = "controlplane"
         }
       }
+      mountPoints = [
+        {
+          containerPath = "/opt/airflow/logs"
+          readOnly      = false
+          sourceVolume  = "log-vol"
+        }
+      ]
     },
     {
       name  = "triggerer"
@@ -213,6 +246,13 @@ resource "aws_ecs_task_definition" "ecs_task_def_airflow_controlplane" {
           awslogs-stream-prefix = "controlplane"
         }
       }
+      mountPoints = [
+        {
+          containerPath = "/opt/airflow/logs"
+          readOnly      = false
+          sourceVolume  = "log-vol"
+        }
+      ]
     }
   ])
 }
@@ -281,7 +321,19 @@ resource "aws_ecs_task_definition" "ecs_task_def_airflow_worker" {
       file_system_id     = aws_efs_file_system.airflow_shared_vol.id
       transit_encryption = "ENABLED"
       authorization_config {
-        access_point_id = aws_efs_access_point.airflow_shared_vol_ac_dbt.id
+        access_point_id = aws_efs_access_point.airflow_dbt.id
+        iam             = "ENABLED"
+      }
+    }
+  }
+  volume {
+    name                = "log-vol"
+    configure_at_launch = false
+    efs_volume_configuration {
+      file_system_id     = aws_efs_file_system.airflow_shared_vol.id
+      transit_encryption = "ENABLED"
+      authorization_config {
+        access_point_id = aws_efs_access_point.airflow_log.id
         iam             = "ENABLED"
       }
     }
@@ -334,6 +386,11 @@ resource "aws_ecs_task_definition" "ecs_task_def_airflow_worker" {
           containerPath = "/opt/dbt"
           readOnly      = false
           sourceVolume  = "dbt-vol"
+        },
+        {
+          containerPath = "/opt/airflow/logs"
+          readOnly      = false
+          sourceVolume  = "log-vol"
         }
       ]
     }

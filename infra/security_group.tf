@@ -82,6 +82,7 @@ resource "aws_security_group" "efs_airflow_shared_vol" {
     to_port   = 2049
     protocol  = "tcp"
     security_groups = [
+      aws_security_group.airflow_controlplane_sg.id,
       aws_security_group.airflow_worker_sg.id,
     ]
   }
