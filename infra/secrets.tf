@@ -51,9 +51,9 @@ resource "aws_secretsmanager_secret_version" "airflow_git_conn_body" {
   secret_id = aws_secretsmanager_secret.airflow_git_conn_body.id
   secret_string = jsonencode({
     conn_type = "git"
-    repo_url = var.airflow_dag_git.repo_url
-    login = var.airflow_dag_git.token_name
-    password = var.airflow_dag_git.token_value
+    repo_url  = var.airflow_dag_git.repo_url
+    login     = var.airflow_dag_git.token_name
+    password  = var.airflow_dag_git.token_value
   })
 }
 

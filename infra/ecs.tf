@@ -23,18 +23,6 @@ resource "aws_ecs_task_definition" "ecs_task_def_airflow_controlplane" {
     cpu_architecture        = "X86_64"
   }
   requires_compatibilities = ["FARGATE"]
-  volume {
-    name                = "log-vol"
-    configure_at_launch = false
-    efs_volume_configuration {
-      file_system_id     = aws_efs_file_system.airflow_shared_vol.id
-      transit_encryption = "ENABLED"
-      authorization_config {
-        access_point_id = aws_efs_access_point.airflow_log.id
-        iam             = "ENABLED"
-      }
-    }
-  }
   container_definitions = jsonencode([
     {
       name      = "init-db"
@@ -49,7 +37,7 @@ resource "aws_ecs_task_definition" "ecs_task_def_airflow_controlplane" {
             value = "true"
           },
           {
-            name = "_AIRFLOW_WWW_USER_CREATE"
+            name  = "_AIRFLOW_WWW_USER_CREATE"
             value = "true"
           }
         ]
@@ -58,16 +46,16 @@ resource "aws_ecs_task_definition" "ecs_task_def_airflow_controlplane" {
         local.airflow_secret_environment,
         [
           {
-            name = "_AIRFLOW_WWW_USER_USERNAME"
+            name      = "_AIRFLOW_WWW_USER_USERNAME"
             valueFrom = "${aws_secretsmanager_secret.airflow_admin_user.arn}:username::"
           },
           {
-            name = "_AIRFLOW_WWW_USER_PASSWORD"
+            name      = "_AIRFLOW_WWW_USER_PASSWORD"
             valueFrom = "${aws_secretsmanager_secret.airflow_admin_user.arn}:password::"
           }
         ]
       )
-      user    = "${local.airflow_uid}:0"
+      user = "${local.airflow_uid}:0"
       logConfiguration = {
         logDriver = "awslogs"
         options = {
@@ -117,13 +105,6 @@ resource "aws_ecs_task_definition" "ecs_task_def_airflow_controlplane" {
           awslogs-stream-prefix = "controlplane"
         }
       }
-      mountPoints = [
-        {
-          containerPath = "/opt/airflow/logs"
-          readOnly      = false
-          sourceVolume  = "log-vol"
-        }
-      ]
     },
     {
       name  = "scheduler"
@@ -157,38 +138,22 @@ resource "aws_ecs_task_definition" "ecs_task_def_airflow_controlplane" {
           awslogs-stream-prefix = "controlplane"
         }
       }
-      mountPoints = [
-        {
-          containerPath = "/opt/airflow/logs"
-          readOnly      = false
-          sourceVolume  = "log-vol"
-        }
-      ]
     },
     {
       name  = "dag-processor"
       image = local.airflow_image
       healthcheck = {
-        command     = ["CMD-SHELL", "airflow jobs check --job-type DagProcessorJob --hostname \"$${HOSTNAME}\""]
+        command     = ["CMD-SHELL", "airflow jobs check --job-type DagProcessorJob --local"]
         inteval     = 35
         timeout     = 30
         retries     = 5
         startPeriod = 120
       }
-      essential = false
-      command   = ["dag-processor"]
-      environment = concat(
-        local.airflow_common_environment,
-        [
-          # https://github.com/apache/airflow/issues/56165#issuecomment-3364403924
-          {
-            name  = "AIRFLOW__SECRETS__BACKEND"
-            value = "airflow.secrets.metastore.MetastoreBackend"
-          }
-        ]
-      )
-      secrets = local.airflow_secret_environment
-      user    = "${local.airflow_uid}:0"
+      essential   = false
+      command     = ["dag-processor"]
+      environment = local.airflow_common_environment
+      secrets     = local.airflow_secret_environment
+      user        = "${local.airflow_uid}:0"
       dependsOn = [
         {
           containerName = "init-db"
@@ -206,19 +171,12 @@ resource "aws_ecs_task_definition" "ecs_task_def_airflow_controlplane" {
           awslogs-stream-prefix = "controlplane"
         }
       }
-      mountPoints = [
-        {
-          containerPath = "/opt/airflow/logs"
-          readOnly      = false
-          sourceVolume  = "log-vol"
-        }
-      ]
     },
     {
       name  = "triggerer"
       image = local.airflow_image
       healthcheck = {
-        command     = ["CMD-SHELL", "airflow jobs check --job-type TriggererJob --hostname \"$${HOSTNAME}\""]
+        command     = ["CMD-SHELL", "airflow jobs check --job-type TriggererJob --local"]
         inteval     = 35
         timeout     = 30
         retries     = 5
@@ -246,13 +204,6 @@ resource "aws_ecs_task_definition" "ecs_task_def_airflow_controlplane" {
           awslogs-stream-prefix = "controlplane"
         }
       }
-      mountPoints = [
-        {
-          containerPath = "/opt/airflow/logs"
-          readOnly      = false
-          sourceVolume  = "log-vol"
-        }
-      ]
     }
   ])
 }
@@ -326,18 +277,6 @@ resource "aws_ecs_task_definition" "ecs_task_def_airflow_worker" {
       }
     }
   }
-  volume {
-    name                = "log-vol"
-    configure_at_launch = false
-    efs_volume_configuration {
-      file_system_id     = aws_efs_file_system.airflow_shared_vol.id
-      transit_encryption = "ENABLED"
-      authorization_config {
-        access_point_id = aws_efs_access_point.airflow_log.id
-        iam             = "ENABLED"
-      }
-    }
-  }
   container_definitions = jsonencode([
     {
       name      = "worker"
@@ -359,7 +298,7 @@ resource "aws_ecs_task_definition" "ecs_task_def_airflow_worker" {
         ]
       )
       healthcheck = {
-        command     = [
+        command = [
           "CMD-SHELL",
           "celery --app airflow.providers.celery.executors.celery_executor.app inspect ping -d \"celery@$${HOSTNAME}\" || celery --app airflow.executors.celery_executor.app inspect ping -d \"celery@$${HOSTNAME}\""
         ]
@@ -387,11 +326,6 @@ resource "aws_ecs_task_definition" "ecs_task_def_airflow_worker" {
           readOnly      = false
           sourceVolume  = "dbt-vol"
         },
-        {
-          containerPath = "/opt/airflow/logs"
-          readOnly      = false
-          sourceVolume  = "log-vol"
-        }
       ]
     }
   ])

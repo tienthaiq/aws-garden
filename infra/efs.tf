@@ -29,19 +29,3 @@ resource "aws_efs_access_point" "airflow_dbt" {
     }
   }
 }
-
-resource "aws_efs_access_point" "airflow_log" {
-  file_system_id = aws_efs_file_system.airflow_shared_vol.id
-  posix_user {
-    uid = local.airflow_uid
-    gid = 0
-  }
-  root_directory {
-    path = "/logs"
-    creation_info {
-      owner_uid   = local.airflow_uid
-      owner_gid   = 0
-      permissions = 775
-    }
-  }
-}

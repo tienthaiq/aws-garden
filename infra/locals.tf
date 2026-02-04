@@ -22,9 +22,9 @@ locals {
       name      = "AIRFLOW__CELERY__RESULT_BACKEND"
       valueFrom = aws_secretsmanager_secret.airflow_celery_result_backend.arn
     },
-    # TODO: GitDagBundle somehow does not pick up connection from environment variable
+    # TODO: Somehow dag-processor could not pick up connection from environment variable
     # {
-    #   name = "AIRFLOW_CONN_DAG_GITHUB"
+    #   name      = "AIRFLOW_CONN_DAG_GITHUB"
     #   valueFrom = aws_secretsmanager_secret.airflow_git_conn_body.arn
     # },
   ]
@@ -42,7 +42,7 @@ locals {
       value = "2"
     },
     {
-      name = "AIRFLOW__CELERY__BROKER_URL"
+      name  = "AIRFLOW__CELERY__BROKER_URL"
       value = "redis://:@${aws_elasticache_cluster.airflow_redis.cache_nodes[0].address}:${aws_elasticache_cluster.airflow_redis.cache_nodes[0].port}/0"
     },
     # Uncomment if using AWS SQS broker
@@ -78,9 +78,9 @@ locals {
       name = "AIRFLOW_CONN_AIRFLOW_REMOTE_LOG"
       value = jsonencode({
         conn_type = "aws"
-        extra = jsonencode({
-          region = var.region
-        })
+        extra = {
+          region_name = var.region
+        }
       })
     },
     {

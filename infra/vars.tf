@@ -24,8 +24,8 @@ variable "airflow_config" {
 
 variable "airflow_dag_git" {
   type = object({
-    repo_url = string
-    token_name = string
+    repo_url    = string
+    token_name  = string
     token_value = string
   })
 }

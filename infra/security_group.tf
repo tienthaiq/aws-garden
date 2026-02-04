@@ -50,12 +50,12 @@ resource "aws_security_group" "airflow_db_sg" {
 }
 
 resource "aws_security_group" "airflow_redis_sg" {
-  name = "airflow_redis_sg"
+  name   = "airflow_redis_sg"
   vpc_id = aws_vpc.demo_airflow_vpc.id
   ingress {
     from_port = 6379
-    to_port = 6379
-    protocol = "tcp"
+    to_port   = 6379
+    protocol  = "tcp"
     security_groups = [
       aws_security_group.airflow_controlplane_sg.id,
       aws_security_group.airflow_worker_sg.id,
@@ -66,13 +66,16 @@ resource "aws_security_group" "airflow_redis_sg" {
 resource "aws_security_group" "airflow_worker_sg" {
   name   = "airflow_worker_sg"
   vpc_id = aws_vpc.demo_airflow_vpc.id
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
 }
+
+resource "aws_vpc_security_group_ingress_rule" "airflow_worker_sg_ingress" {
+  security_group_id            = aws_security_group.airflow_worker_sg.id
+  from_port                    = 8793
+  to_port                      = 8793
+  ip_protocol                  = "tcp"
+  referenced_security_group_id = aws_security_group.airflow_controlplane_sg.id
+}
+
 
 resource "aws_security_group" "efs_airflow_shared_vol" {
   name   = "efs_airflow_shared_vol"
@@ -82,7 +85,6 @@ resource "aws_security_group" "efs_airflow_shared_vol" {
     to_port   = 2049
     protocol  = "tcp"
     security_groups = [
-      aws_security_group.airflow_controlplane_sg.id,
       aws_security_group.airflow_worker_sg.id,
     ]
   }
